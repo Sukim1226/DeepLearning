@@ -1,66 +1,154 @@
 import numpy as np
 import time
 
-
-alpha = 0.01
-w = np.zeros((1, 2))
-b = np.zeros((1, 1))
+MIN_NUM = 1e-6
+alpha = 35  # Best Result : 0.01
 
 
-def generate(input_dimension, sample_num):
-    x = np.random.uniform(-2, 2, size=(input_dimension, sample_num))  # x_train : (2, 1000) / x_test : (2, 100)
+class Network:
+    def __init__(self, dim, unit):
+        self.dim = dim
+        self.unit = unit
+        self.w = np.zeros((unit, dim))  # w : (unit, dim)
+        self.b = np.zeros((unit, 1))  # b : (unit, 1)
+
+    def forward(self, x):  # x : (dim, m)
+        z = np.dot(self.w, x) + self.b  # z : (unit, m)
+        a = sigmoid(z)  # a : (unit, m)
+
+        a = np.minimum(1 - MIN_NUM, a)
+        a = np.maximum(MIN_NUM, a)
+
+        return a
+
+    def backward(self, x, a, da):  # x : (dim, m) / a : (unit, m)
+        dz = da * derived_sigmoid(a)  # dz : (unit, m)
+        dw = np.dot(dz, x.T) / x.shape[-1]  # dw : (unit, dim)
+        db = np.mean(dz, axis=1, keepdims=True)  # db : (unit, 1)
+
+        return dw, db, np.dot(self.w.T, dz)  # da : (dim, m)
+
+    def update(self, dw, db):
+        self.w -= alpha * dw  # w : (unit, dim)
+        self.b -= alpha * db  # b : (unit, 1)
+
+    @staticmethod
+    def loss(y, a):
+        c = -np.mean(y * np.log(a) + (1 - y) * (np.log(1 - a)))
+        return c
+
+    @staticmethod
+    def accuracy(y, a):
+        a = np.round(a)
+        compare = ~np.logical_xor(a, y)
+        return np.mean(compare)
+
+
+# Activation function
+def sigmoid(z):
+    return 1 / (1 + np.exp(-z))
+
+
+def derived_sigmoid(a):
+    return a * (1 - a)
+
+
+# Generate train sample shaped (dim, m)
+def generate(dim, m, rng):
+    x = np.random.randint(rng[0], rng[1], size=(dim, m))  # x : (dim, m)
     y = []
-    for i in range(sample_num):
-        if x[0][i] * x[0][i] > x[1][i]:
+    for i in range(m):
+        if x[0][i] ** 2 > x[1][i]:
             y.append(1)
         else:
             y.append(0)
-    y = np.array(y)
+    y = np.array(y).reshape((1, m))  # y : (1, m)
     return x, y
 
 
-def forward(x):
-    global w, b
-    z = np.dot(w, x) + b
-    a = 1 / (1 + np.exp(-z))
+# Train K times
+def train(iteration, x, y, layers):
+    start_time = time.time()
 
-    return a
-
-
-def backward(x, y, a):
-    global w, b
-    dz = a - y
-    # dw = np.mean(np.dot(dz, x.T), axis=1, keepdims=True)
-    # db = np.mean(dz, axis=1, keepdims=True)
-    dw = 1/(np.size(x, axis=1)) * np.sum(np.dot(dz, x.T))
-    db = 1/(np.size(x, axis=1)) * np.sum(np.dot(dz))
-
-    w -= alpha * dw
-    b -= alpha * db
-
-
-def accuracy(y, y_hat):
-    y_hat = np.round(y_hat)
-    return np.mean(~np.logical_xor(y_hat, y))
-
-
-def train(iteration, x, y):
     for i in range(iteration):
-        a = forward(x)
-        backward(x, y, a)
+        y_hats = [x]
+        # Forward propagation
+        for layer in layers:
+            y_hat = layer.forward(y_hats[-1])
+            y_hats.append(y_hat)
 
-    print('[Task 1] Train Accuracy: {}'.format(accuracy(y, a)))
+        y_hats.reverse()
+        idx = 0
+        da = (-y / y_hats[idx]) + (1 - y) / (1 - y_hats[idx])
+
+        # Back propagation
+        for layer in reversed(layers):
+            dw, db, da = layer.backward(y_hats[idx + 1], y_hats[idx], da)
+            layer.update(dw, db)
+            idx += 1
+
+    end_time = time.time() - start_time
+
+    # Print cost and accuracy of train set
+    # print('====================Train====================')
+    #print('Loss : {}'.format(layers[-1].loss(y, y_hats[0])))
+    print('Accuracy : {}'.format(layers[-1].accuracy(y, y_hats[0])))
+    print('Execution Time : {}'.format(end_time))
 
 
-def test(x, y):
-    a = forward(x)
-    print('[Task 1] Test Accuracy: {}'.format(accuracy(y, a)))
+def test(y_hat, y, layers):
+    start_time = time.time()
+
+    for layer in layers:
+        # Forward propagation
+        y_hat = layer.forward(y_hat)
+
+    end_time = time.time() - start_time
+
+    # Print cost and accuracy of test set
+    # print('====================Test====================')
+    print('---------------------------')
+    #print('Loss : {}'.format(layers[-1].loss(y, y_hat)))
+    print('Accuracy : {}'.format(layers[-1].accuracy(y, y_hat)))
+    print('Execution Time : {}'.format(end_time))
+    # print('--------------------------------------------\n')
 
 
-x_train, y_train = generate(2, 1000)
-x_test, y_test = generate(2, 1000)
+# Create Layers
+def make_layers(units):
+    layers = []
+    for i in range(len(units) - 1):
+        layers.append(Network(units[i], units[i + 1]))
+    return layers
 
 
-if __name__ == '__main__':
-    train(100, x_train, y_train)
-    test(x_test, y_test)
+# Initialize input dimension, # train set, # test set, random data range, iteration
+dim = 2
+train_num = 1000
+test_num = 100
+data_range = [-2, 2]
+K = 100
+
+# Generate train samples
+x_train, y_train = generate(dim, train_num, data_range)
+x_test, y_test = generate(dim, test_num, data_range)
+
+# Number of units in each layer (counting from input)
+task1 = make_layers([dim, 1])
+task2 = make_layers([dim, 1, 1])
+task3 = make_layers([dim, 3, 1])
+
+# Train task 1
+print('========== Task1 ==========')
+train(K, x_train, y_train, task1)
+test(x_test, y_test, task1)
+
+# Train task 2
+print('========== Task2 ==========')
+train(K, x_train, y_train, task2)
+test(x_test, y_test, task2)
+
+# Train task 3
+print('========== Task3 ==========')
+train(K, x_train, y_train, task3)
+test(x_test, y_test, task3)
