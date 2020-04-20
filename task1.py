@@ -2,7 +2,7 @@ import numpy as np
 import time
 
 MIN_NUM = 1e-6
-alpha = 35  # Best Result : 0.01
+alpha = 35
 
 
 class Network:
@@ -49,6 +49,7 @@ def sigmoid(z):
     return 1 / (1 + np.exp(-z))
 
 
+# Derivation of activation function
 def derived_sigmoid(a):
     return a * (1 - a)
 
@@ -66,7 +67,7 @@ def generate(dim, m, rng):
     return x, y
 
 
-# Train K times
+# Train
 def train(iteration, x, y, layers):
     start_time = time.time()
 
@@ -90,12 +91,12 @@ def train(iteration, x, y, layers):
     end_time = time.time() - start_time
 
     # Print cost and accuracy of train set
-    # print('====================Train====================')
-    #print('Loss : {}'.format(layers[-1].loss(y, y_hats[0])))
-    print('Accuracy : {}'.format(layers[-1].accuracy(y, y_hats[0])))
-    print('Execution Time : {}'.format(end_time))
+    print('Train Loss : {}'.format(layers[-1].loss(y, y_hats[0])))
+    print('Train Accuracy : {}'.format(layers[-1].accuracy(y, y_hats[0])))
+    print('Train Execution Time : {}'.format(end_time))
 
 
+# Test
 def test(y_hat, y, layers):
     start_time = time.time()
 
@@ -106,12 +107,10 @@ def test(y_hat, y, layers):
     end_time = time.time() - start_time
 
     # Print cost and accuracy of test set
-    # print('====================Test====================')
     print('---------------------------')
-    #print('Loss : {}'.format(layers[-1].loss(y, y_hat)))
-    print('Accuracy : {}'.format(layers[-1].accuracy(y, y_hat)))
-    print('Execution Time : {}'.format(end_time))
-    # print('--------------------------------------------\n')
+    print('Test Loss : {}'.format(layers[-1].loss(y, y_hat)))
+    print('Test Accuracy : {}'.format(layers[-1].accuracy(y, y_hat)))
+    print('Test Execution Time : {}'.format(end_time))
 
 
 # Create Layers
@@ -127,28 +126,17 @@ dim = 2
 train_num = 1000
 test_num = 100
 data_range = [-2, 2]
-K = 100
+K = 1000
 
 # Generate train samples
 x_train, y_train = generate(dim, train_num, data_range)
 x_test, y_test = generate(dim, test_num, data_range)
 
-# Number of units in each layer (counting from input)
-task1 = make_layers([dim, 1])
-task2 = make_layers([dim, 1, 1])
-task3 = make_layers([dim, 3, 1])
+if __name__ == '__main__':
+    # Number of units in each layer (counting from input)
+    task1 = make_layers([dim, 1])
 
-# Train task 1
-print('========== Task1 ==========')
-train(K, x_train, y_train, task1)
-test(x_test, y_test, task1)
+    print('========== Task1 ==========')
+    train(K, x_train, y_train, task1)
+    test(x_test, y_test, task1)
 
-# Train task 2
-print('========== Task2 ==========')
-train(K, x_train, y_train, task2)
-test(x_test, y_test, task2)
-
-# Train task 3
-print('========== Task3 ==========')
-train(K, x_train, y_train, task3)
-test(x_test, y_test, task3)
