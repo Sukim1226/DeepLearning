@@ -2,7 +2,7 @@ import numpy as np
 import time
 
 MIN_NUM = 1e-6
-alpha = 35
+alpha = 0.1
 
 
 class Network:
@@ -56,7 +56,7 @@ def derived_sigmoid(a):
 
 # Generate train sample shaped (dim, m)
 def generate(dim, m, rng):
-    x = np.random.randint(rng[0], rng[1], size=(dim, m))  # x : (dim, m)
+    x = np.random.uniform(rng[0], rng[1], size=(dim, m))  # x : (dim, m)
     y = []
     for i in range(m):
         if x[0][i] ** 2 > x[1][i]:
@@ -103,14 +103,14 @@ def test(y_hat, y, layers):
     for layer in layers:
         # Forward propagation
         y_hat = layer.forward(y_hat)
-
+    print("*"*15)
     end_time = time.time() - start_time
 
     # Print cost and accuracy of test set
     print('---------------------------')
     print('Test Loss : {}'.format(layers[-1].loss(y, y_hat)))
     print('Test Accuracy : {}'.format(layers[-1].accuracy(y, y_hat)))
-    print('Test Execution Time : {}'.format(end_time))
+    print('Test Execution Time : {:f}'.format(end_time))
 
 
 # Create Layers
