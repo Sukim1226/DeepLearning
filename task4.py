@@ -43,7 +43,7 @@ model.compile(optimizer=tf.keras.optimizers.Adam(0.1), loss='mean_squared_error'
 
 
 train_start = time.time()
-train_result = model.fit(x_train, y_train, batch_size=1, epochs=1000, verbose=0)
+train_result = model.fit(x_train, y_train, batch_size=1000, epochs=1000, verbose=0)
 train_end = time.time() - train_start
 print('Train accuracy: %f' % train_result.history['accuracy'][-1])
 print('Train loss: %f' % train_result.history['loss'][-1])
@@ -52,7 +52,7 @@ print('Train time: %f' % train_end)
 print('\n')
 
 test_start = time.time()
-test_result = model.evaluate(x_test, y_test, verbose=0) # batch_size = 100
+test_result = model.evaluate(x_test, y_test, batch_size=1000, verbose=0) # batch_size = 100
 test_end = time.time() - test_start
 print('Test accuracy: %f' % test_result[1])
 print('Test loss: %f' % test_result[0])
